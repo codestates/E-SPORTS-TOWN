@@ -19,7 +19,6 @@ const Logo = styled.div`
   padding: 10px;
   gap: 10px;
   a {
-    text-decoration: none;
     cursor: pointer;
     color: #00406e;
     font-size: 20px;
