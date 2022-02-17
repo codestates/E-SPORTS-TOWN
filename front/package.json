@@ -9,6 +9,7 @@
     "@testing-library/user-event": "^13.2.1",
     "authereum": "^0.1.14",
     "axios": "^0.24.0",
+    "caver-js": "^1.6.8",
     "ethers": "^5.5.3",
     "fortmatic": "^2.2.1",
     "history": "^5.2.0",

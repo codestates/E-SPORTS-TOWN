@@ -9,35 +9,38 @@ import { FiLogOut } from 'react-icons/fi';
 import { CgProfile } from 'react-icons/cg';
 import logo from '../images/logo.png';
 
-import Web3Modal from 'web3modal';
-import { ethers } from 'ethers';
-import Fortmatic from 'fortmatic';
-import Portis from '@portis/web3';
+//import Web3Modal from 'web3modal';
+//import { ethers } from 'ethers';
+//import Fortmatic from 'fortmatic';
+//import Portis from '@portis/web3';
 
-const providerOptions = {
-  /* See Provider Options Section */
-  fortmatic: {
-    package: Fortmatic, // required
-    options: {
-      key: 'pk_test_B339BA8200249E26', // required, test
-    },
-  },
-  portis: {
-    package: Portis, // required
-    options: {
-      id: '0a7de06b-b597-48af-9e68-66547acbcea1', // required
-    },
-  },
-  binancechainwallet: {
-    package: true,
-  },
-};
+import Caver from 'caver-js';
+const caver = new Caver(window.klaytn);
 
-const web3Modal = new Web3Modal({
-  //network: "mainnet", // optional
-  //cacheProvider: false, // optional
-  providerOptions, // required
-});
+//const providerOptions = {
+//  /* See Provider Options Section */
+//  fortmatic: {
+//    package: Fortmatic, // required
+//    options: {
+//      key: 'pk_test_B339BA8200249E26', // required, test
+//    },
+//  },
+//  portis: {
+//    package: Portis, // required
+//    options: {
+//      id: '0a7de06b-b597-48af-9e68-66547acbcea1', // required
+//    },
+//  },
+//  binancechainwallet: {
+//    package: true,
+//  },
+//};
+
+//const web3Modal = new Web3Modal({
+//  //network: "mainnet", // optional
+//  //cacheProvider: false, // optional
+//  providerOptions, // required
+//});
 
 const HeaderContainer = styled.div`
   position: fixed;
@@ -118,25 +121,39 @@ function Header() {
   let navigate = useNavigate();
 
   const connectWallet = async () => {
-    const web3ModalProvider = await web3Modal.connect();
-    const provider = new ethers.providers.Web3Provider(web3ModalProvider);
-    const signer = await provider.getSigner(0);
-    const address = await signer.getAddress();
-    const accounts = [];
-    console.log('accounts!!!!@!@!#!#', address);
-    accounts.push(address);
-    setUser(accounts);
-    console.log('accounts!!!!!:' + accounts);
-    const account = await login(accounts);
-    setUser(account);
-    window.location.assign('http://localhost:3000/');
+    //const web3ModalProvider = await web3Modal.connect();
+    //const provider = new ethers.providers.Web3Provider(web3ModalProvider);
+    //const signer = await provider.getSigner(0);
+    //const address = await signer.getAddress();
+    //const accounts = [];
+    //console.log('accounts!!!!@!@!#!#', address);
+    //accounts.push(address);
+    //setUser(accounts);
+    //console.log('accounts!!!!!:' + accounts);
+    //const account = await login(accounts);
+    //setUser(account);
+    //window.location.assign('http://localhost:3000/');
+    if(typeof window.klaytn !== 'undefined') {
+      try {
+        const accounts = await window.klaytn.enable();
+        console.log('accounts-klaytn:' + accounts);
+        setUser(accounts);
+        console.log('after-setUser-klaytn:' + user);
+        const account = await login(accounts);
+        setUser(account);
+      } catch (err) {
+        console.log(err);
+      }
+    }
   };
 
   async function disconnectWallet() {
-    await web3Modal.clearCachedProvider();
+    //await web3Modal.clearCachedProvider();
+    window.klaytn = 'undefined';
     logout();
     setUser({});
     setProfileImg({});
+    window.location.assign('http://localhost:3000/')
   }
 
   const newUserAddress =
