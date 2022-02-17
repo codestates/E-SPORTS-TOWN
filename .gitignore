@@ -1,4 +1,5 @@
 **/node_modules/*
+.gitignore
 .env*
 init-models.js
 /node_modules
@@ -6,3 +7,6 @@ init-models.js
 **/truffle-config.js
 daemon/test.js
 .DS_Store
+
+daemon/.deps
+daemon/contracts/artifacts

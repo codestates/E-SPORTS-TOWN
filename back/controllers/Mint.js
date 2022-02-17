@@ -1,6 +1,13 @@
 const Web3 = require('web3');
 //const web3 = new Web3('HTTP://127.0.0.1:7545');
-const web3 = new Web3('https://ropsten.infura.io/v3/436b0f56d4ab4eafbd26f3b86e1113be');
+//const web3 = new Web3('https://ropsten.infura.io/v3/6057d4636739455fbdec0266dd3556bf');
+
+const web3 = new Web3(
+  new Web3.providers.HttpProvider(
+    'https://ropsten.infura.io/v3/6057d4636739455fbdec0266dd3556bf'
+  )
+);
+
 const users = require('../models/Users');
 const normalData = require('../models/NormalData');
 const auctionData = require('../models/AuctionData');
@@ -18,6 +25,7 @@ module.exports = {
     const privateKey = process.env.serverAddress_PK;
     const tokenUri = `https://ipfs.io/ipfs/${data.metadata}`;
     const nonce = await web3.eth.getTransactionCount(sendAccount, 'latest');
+    //const nonce = await web3.eth_getTransactionCount(sendAccount, 'latest');
     const price = data.price + '000000000000000000';
     const recieveAccount = data.userAddress;
     console.log('RECIEVEACCOUNT, ', recieveAccount);
@@ -33,13 +41,14 @@ module.exports = {
     };
 
     const signPromise = web3.eth.accounts.signTransaction(tx, privateKey);
-
+    console.log("signPromise", signPromise);
     signPromise.then((signedTx) => {
-      console.log(signedTx);
+      console.log("signedTx", signedTx);
       web3.eth.sendSignedTransaction(
+      //web3.eth_sendRawTransaction(
         signedTx.rawTransaction,
         async function (err, hash) {
-          console.log(err);
+          console.log("err", err);
           if (!err) {
             let newErc721Contract = new web3.eth.Contract(
               erc721Abi,
@@ -64,7 +73,7 @@ module.exports = {
               console.log('Data stored in NormalData Successfully');
             });
           } else {
-            console.log('failed!');
+            console.log('failed! Mint.js line 74');
           }
         }
       );
@@ -74,7 +83,9 @@ module.exports = {
     const sendAccount = process.env.serverAddress;
     const privateKey = process.env.serverAddress_PK;
     const recieveAccount = userAddress;
+    console.log('recieveAccount', recieveAccount);
     const nonce = await web3.eth.getTransactionCount(sendAccount, 'latest');
+    //const nonce = await web3.eth_getTransactionCount(sendAccount, 'latest');
     const contractData = erc20Contract.methods
       .mintToken(recieveAccount, process.env.nftCA, '1000000000000000000')
       .encodeABI();
@@ -86,10 +97,13 @@ module.exports = {
       gas: 5000000,
       data: contractData,
     };
+    console.log('mint20Token-tx', tx);
     const signPromise = web3.eth.accounts.signTransaction(tx, privateKey);
 
     signPromise.then((signedTx) => {
+      console.log('mint20Token-signedTx', signedTx);
       web3.eth.sendSignedTransaction(
+      //web3.eth_sendRawTransaction(
         signedTx.rawTransaction,
         async function (err, hash) {
           if (!err) {
@@ -122,8 +136,9 @@ module.exports = {
     const sendAccount = process.env.serverAddress;
     const privateKey = process.env.serverAddress_PK;
     const nonce = await web3.eth.getTransactionCount(sendAccount, 'latest');
+    //const nonce = await web3.eth_getTransactionCount(sendAccount, 'latest');
     const recieveAccount = userAddress;
-    const contractData = erc20Contract.methods
+    const contractData = await erc20Contract.methods
       .transfer(recieveAccount, '1000000000000000000')
       .encodeABI();
     console.log(contractData);
@@ -131,12 +146,16 @@ module.exports = {
       from: sendAccount,
       to: process.env.erc20CA,
       nonce: nonce,
-      gas: 5000000,
       data: contractData,
+      gasPrice: '5000000000',
     };
+    tx.gas = await web3.eth.estimateGas(tx);
     const signPromise = web3.eth.accounts.signTransaction(tx, privateKey);
     signPromise.then((signedTx) => {
+      console.log("signedTx.rawTransaction", signedTx.rawTransaction);
+      console.log("signedTx", signedTx);
       web3.eth.sendSignedTransaction(
+      //web3.eth_sendRawTransaction(
         signedTx.rawTransaction,
         async function (err, hash) {
           if (!err) {
@@ -151,6 +170,7 @@ module.exports = {
             const filter = { userAddress: recieveAccount.toLowerCase() };
             const update = { token: balance / 1000000000000000000 };
             let result = await users.findOneAndUpdate(filter, update);
+            console.log('Erc20 Token success! on Server');
             res.json({
               message: 'Erc20 Token success',
               message: hash,
@@ -181,13 +201,23 @@ module.exports = {
 
     let contract = new web3.eth.Contract(erc20Abi, process.env.erc20CA);
     const nonce = await web3.eth.getTransactionCount(
+    //const nonce = await web3.eth_getTransactionCount(
       data.currentAddress,
       'latest'
     );
     // let response = contract.methods.approve(spenderAccount, amount).encodeABI();
+    const tx = {
+      from: spenderAccount,
+      to: process.env.erc20CA,
+      nonce: nonce,
+      gasPrice: '5000000000'
+    };
+    tx.gas = await web3.eth.estimateGas(tx);
+
     let response = await contract.methods
       .approve(spenderAccount, web3.utils.toWei(amount, 'ether'))
-      .send({ from: data.currentAddress }, async (err, transactionHash) => {
+      //.send({ from: data.currentAddress }, async (err, transactionHash) => {
+      .send({ from: data.currentAddress, nonce, gas }, async (err, transactionHash) => {
         if (err) {
           console.log(err);
         } else {
@@ -235,6 +265,7 @@ module.exports = {
     const spenderAccount = process.env.serverAddress;
     let contract = new web3.eth.Contract(erc20Abi, process.env.erc20CA);
     const nonce = await web3.eth.getTransactionCount(currentAddress, 'latest');
+    //const nonce = await web3.eth_getTransactionCount(currentAddress, 'latest');
     console.log(web3.utils.toWei(String(bid), 'ether'));
     contract.methods
       .approve(spenderAccount, web3.utils.toWei(String(bid), 'ether'))
@@ -257,6 +288,7 @@ module.exports = {
     let contract = new web3.eth.Contract(erc721Abi, process.env.nftCA);
 
     const nonce = await web3.eth.getTransactionCount(
+    //const nonce = await web3.eth_getTransactionCount(
       tokenOwnerAddress,
       'latest'
     );
@@ -277,6 +309,7 @@ module.exports = {
     const serverAccount = process.env.serverAddress;
     const privateKey = process.env.serverAddress_PK;
     const nonce = await web3.eth.getTransactionCount(serverAccount, 'latest');
+    //const nonce = await web3.eth_getTransactionCount(serverAccount, 'latest');
     let contract = new web3.eth.Contract(erc721Abi, process.env.nftCA);
     const data = contract.methods.setToken(process.env.erc20CA).encodeABI();
 
@@ -292,6 +325,7 @@ module.exports = {
     signPromise
       .then((signedTx) => {
         web3.eth.sendSignedTransaction(
+        //web3.eth_sendRawTransaction(
           signedTx.rawTransaction,
           async function (err, hash) {
             if (!err) {
@@ -340,6 +374,7 @@ module.exports = {
         });
     }
     let nonce = await web3.eth.getTransactionCount(serverAccount, 'latest');
+    //let nonce = await web3.eth_getTransactionCount(serverAccount, 'latest');
     const sellContract = await erc721Contract.methods
       .sellNFT(bidAddress, tokenOwnerAddress, tokenId)
       .encodeABI();
@@ -354,6 +389,7 @@ module.exports = {
     signPromise
       .then((signedTx) => {
         web3.eth.sendSignedTransaction(
+        //web3.eth_sendRawTransaction(
           signedTx.rawTransaction,
           async (err, hash) => {
             if (!err) {
@@ -700,6 +736,7 @@ module.exports = {
     console.log(totalBid, etherTotalBid);
 
     let nonce = await web3.eth.getTransactionCount(serverAccount, 'latest');
+    //let nonce = await web3.eth_getTransactionCount(serverAccount, 'latest');
     const sellContract = erc721Contract.methods
       .sellMultiNFT(
         maxOwnerAddress,
@@ -722,6 +759,7 @@ module.exports = {
     signPromise
       .then((signedTx) => {
         web3.eth.sendSignedTransaction(
+        //web3.eth_sendRawTransaction(
           signedTx.rawTransaction,
           async (err, hash) => {
             if (!err) {

@@ -122,13 +122,10 @@ function Header() {
     const provider = new ethers.providers.Web3Provider(web3ModalProvider);
     const signer = await provider.getSigner(0);
     const address = await signer.getAddress();
-
     const accounts = [];
     console.log('accounts!!!!@!@!#!#', address);
     accounts.push(address);
-
     setUser(accounts);
-
     console.log('accounts!!!!!:' + accounts);
     const account = await login(accounts);
     setUser(account);
